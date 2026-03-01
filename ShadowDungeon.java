@@ -1,1 +1,5 @@
-// Your content here from ShadowDungeon.java.txt
+// Code for ShadowDungeon game
+
+public class ShadowDungeon {
+    // Game logic and methods here
+}
