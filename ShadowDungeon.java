@@ -175,18 +175,4 @@ public class ShadowDungeon {
         System.out.println("*****************************************");
     }
 }
-```
 
----
-
-## ▶️ How to Run
-
-**Delete the old file** and create a new file named exactly:
-```
-ShadowDungeon.java
-```
-
-Then compile and run:
-```
-javac ShadowDungeon.java
-java ShadowDungeon
