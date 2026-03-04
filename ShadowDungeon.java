@@ -1,178 +1,213 @@
-import java.util.Scanner;
+import javax.swing.*;
+import java.awt.*;
+import java.awt.event.*;
 import java.util.Random;
 
-public class ShadowDungeon {
+public class ShadowDungeonGUI extends JFrame {
 
-    static Scanner sc = new Scanner(System.in);
-    static Random rand = new Random();
+    private CardLayout cardLayout;
+    private JPanel mainPanel;
 
-    static String playerName;
-    static String playerClass;
-    static int playerHP;
-    static int playerMaxHP;
-    static int playerAttack;
-    static int playerPotions = 2;
-    static int playerXP = 0;
+    private JTextField nameField;
+    private JRadioButton warriorBtn, mageBtn, archerBtn;
+
+    private JLabel playerStatsLabel;
+    private JLabel enemyStatsLabel;
+    private JTextArea gameLog;
+
+    private String playerName;
+    private String playerClass;
+    private int playerHP, playerMaxHP, playerAttack;
+    private int playerPotions = 2;
+    private int playerXP = 0;
+
+    private String[] enemies = {"Goblin", "Skeleton", "Troll", "DRAGON"};
+    private int[] enemyHPs = {50, 80, 120, 200};
+    private int[] enemyAttacks = {10, 15, 20, 30};
+    private int currentEnemy = 0;
+    private int enemyHP;
+
+    private Random rand = new Random();
+
+    public ShadowDungeonGUI() {
+        setTitle("ShadowDungeon - GUI RPG");
+        setSize(600, 450);
+        setDefaultCloseOperation(EXIT_ON_CLOSE);
+        setLocationRelativeTo(null);
+
+        cardLayout = new CardLayout();
+        mainPanel = new JPanel(cardLayout);
+
+        mainPanel.add(createStartPanel(), "Start");
+        mainPanel.add(createGamePanel(), "Game");
+
+        add(mainPanel);
+        setVisible(true);
+    }
+
+    private JPanel createStartPanel() {
+        JPanel panel = new JPanel();
+        panel.setLayout(new GridLayout(6, 1, 10, 10));
+
+        panel.add(new JLabel("SHADOW DUNGEON", SwingConstants.CENTER));
+
+        panel.add(new JLabel("Enter Hero Name:"));
+        nameField = new JTextField();
+        panel.add(nameField);
+
+        warriorBtn = new JRadioButton("Warrior (HP:100 ATK:20)");
+        mageBtn = new JRadioButton("Mage (HP:70 ATK:35)");
+        archerBtn = new JRadioButton("Archer (HP:85 ATK:25)");
+
+        ButtonGroup group = new ButtonGroup();
+        group.add(warriorBtn);
+        group.add(mageBtn);
+        group.add(archerBtn);
+
+        panel.add(warriorBtn);
+        panel.add(mageBtn);
+        panel.add(archerBtn);
+
+        JButton startBtn = new JButton("Start Game");
+        panel.add(startBtn);
+
+        startBtn.addActionListener(e -> startGame());
+
+        return panel;
+    }
+
+    private JPanel createGamePanel() {
+        JPanel panel = new JPanel(new BorderLayout());
+
+        JPanel topPanel = new JPanel(new GridLayout(2, 1));
+        playerStatsLabel = new JLabel();
+        enemyStatsLabel = new JLabel();
+        topPanel.add(playerStatsLabel);
+        topPanel.add(enemyStatsLabel);
+
+        panel.add(topPanel, BorderLayout.NORTH);
+
+        gameLog = new JTextArea();
+        gameLog.setEditable(false);
+        panel.add(new JScrollPane(gameLog), BorderLayout.CENTER);
+
+        JPanel buttonPanel = new JPanel();
+        JButton attackBtn = new JButton("Attack");
+        JButton potionBtn = new JButton("Use Potion");
+        JButton runBtn = new JButton("Run");
+
+        buttonPanel.add(attackBtn);
+        buttonPanel.add(potionBtn);
+        buttonPanel.add(runBtn);
+
+        panel.add(buttonPanel, BorderLayout.SOUTH);
+
+        attackBtn.addActionListener(e -> attackEnemy());
+        potionBtn.addActionListener(e -> usePotion());
+        runBtn.addActionListener(e -> gameOver("You ran away!"));
+
+        return panel;
+    }
+
+    private void startGame() {
+        playerName = nameField.getText().trim();
+        if (playerName.isEmpty()) {
+            JOptionPane.showMessageDialog(this, "Enter your name!");
+            return;
+        }
+
+        if (warriorBtn.isSelected()) {
+            playerClass = "Warrior";
+            playerHP = playerMaxHP = 100;
+            playerAttack = 20;
+        } else if (mageBtn.isSelected()) {
+            playerClass = "Mage";
+            playerHP = playerMaxHP = 70;
+            playerAttack = 35;
+        } else if (archerBtn.isSelected()) {
+            playerClass = "Archer";
+            playerHP = playerMaxHP = 85;
+            playerAttack = 25;
+        } else {
+            JOptionPane.showMessageDialog(this, "Select a class!");
+            return;
+        }
+
+        currentEnemy = 0;
+        loadEnemy();
+        updateStats();
+        gameLog.setText("Welcome " + playerName + " the " + playerClass + "!\n");
+        cardLayout.show(mainPanel, "Game");
+    }
+
+    private void loadEnemy() {
+        enemyHP = enemyHPs[currentEnemy];
+        gameLog.append("A wild " + enemies[currentEnemy] + " appears!\n");
+    }
+
+    private void attackEnemy() {
+        int damage = playerAttack + rand.nextInt(10);
+        enemyHP -= damage;
+        gameLog.append("You hit " + enemies[currentEnemy] + " for " + damage + " damage!\n");
+
+        if (enemyHP <= 0) {
+            playerXP += 50;
+            playerPotions++;
+            gameLog.append(enemies[currentEnemy] + " defeated! +50 XP, +1 Potion\n");
+
+            currentEnemy++;
+            if (currentEnemy >= enemies.length) {
+                victory();
+                return;
+            }
+            loadEnemy();
+        } else {
+            enemyAttack();
+        }
+        updateStats();
+    }
+
+    private void enemyAttack() {
+        int damage = enemyAttacks[currentEnemy] + rand.nextInt(5);
+        playerHP -= damage;
+        gameLog.append(enemies[currentEnemy] + " hits you for " + damage + " damage!\n");
+
+        if (playerHP <= 0) {
+            gameOver("You were defeated!");
+        }
+    }
+
+    private void usePotion() {
+        if (playerPotions > 0) {
+            playerHP = playerMaxHP;
+            playerPotions--;
+            gameLog.append("You used a potion. HP restored!\n");
+            updateStats();
+        } else {
+            gameLog.append("No potions left!\n");
+        }
+    }
+
+    private void updateStats() {
+        playerStatsLabel.setText("Player: " + playerName + " | HP: " + playerHP +
+                "/" + playerMaxHP + " | XP: " + playerXP + " | Potions: " + playerPotions);
+
+        enemyStatsLabel.setText("Enemy: " + enemies[currentEnemy] +
+                " | HP: " + enemyHP);
+    }
+
+    private void gameOver(String message) {
+        JOptionPane.showMessageDialog(this, message + "\nGAME OVER");
+        System.exit(0);
+    }
+
+    private void victory() {
+        JOptionPane.showMessageDialog(this,
+                "DRAGON DEFEATED!\nYou saved the kingdom!\nTotal XP: " + playerXP);
+        System.exit(0);
+    }
 
     public static void main(String[] args) {
-        showWelcome();
-        chooseCharacter();
-
-        boolean win1 = battle("Goblin", 50, 10);
-        if (!win1) { gameOver(); return; }
-
-        boolean win2 = battle("Skeleton", 80, 15);
-        if (!win2) { gameOver(); return; }
-
-        boolean win3 = battle("Troll", 120, 20);
-        if (!win3) { gameOver(); return; }
-
-        boolean win4 = battle("DRAGON (Final Boss)", 200, 30);
-        if (!win4) { gameOver(); return; }
-
-        victory();
-    }
-
-    static void showWelcome() {
-        System.out.println("*****************************************");
-        System.out.println("*                                       *");
-        System.out.println("*        S H A D O W  D U N G E O N    *");
-        System.out.println("*          A Java RPG Adventure         *");
-        System.out.println("*                                       *");
-        System.out.println("*****************************************");
-        System.out.println("\nThe kingdom is cursed by a mighty Dragon.");
-        System.out.println("You are the last hope to save the world...\n");
-        System.out.print("Enter your hero name: ");
-        playerName = sc.nextLine();
-        System.out.println("\nWelcome, " + playerName + "! Enter the Shadow Dungeon if you dare...\n");
-    }
-
-    static void chooseCharacter() {
-        System.out.println("=========================================");
-        System.out.println("         CHOOSE YOUR CHARACTER           ");
-        System.out.println("=========================================");
-        System.out.println("1. Warrior  (HP: 100, Attack: 20)");
-        System.out.println("2. Mage     (HP: 70,  Attack: 35)");
-        System.out.println("3. Archer   (HP: 85,  Attack: 25)");
-        System.out.print("\nEnter choice (1, 2 or 3): ");
-
-        int choice = getValidInt();
-
-        switch (choice) {
-            case 1:
-                playerClass = "Warrior";
-                playerHP = 100; playerMaxHP = 100; playerAttack = 20;
-                break;
-            case 2:
-                playerClass = "Mage";
-                playerHP = 70; playerMaxHP = 70; playerAttack = 35;
-                break;
-            case 3:
-                playerClass = "Archer";
-                playerHP = 85; playerMaxHP = 85; playerAttack = 25;
-                break;
-            default:
-                System.out.println("Invalid! Warrior selected by default.");
-                playerClass = "Warrior";
-                playerHP = 100; playerMaxHP = 100; playerAttack = 20;
-        }
-
-        System.out.println("\nYou chose --> " + playerClass);
-        System.out.println("Your journey into the Shadow Dungeon begins!");
-        System.out.println("=========================================\n");
-    }
-
-    static boolean battle(String enemyName, int enemyHP, int enemyAttack) {
-        System.out.println("\n~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~");
-        System.out.println("  A wild " + enemyName + " blocks your path!");
-        System.out.println("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~");
-
-        while (playerHP > 0 && enemyHP > 0) {
-            System.out.println("\n[ " + playerName + " | HP: " + playerHP + " | Potions: " + playerPotions + " | XP: " + playerXP + " ]");
-            System.out.println("[ " + enemyName + " | HP: " + enemyHP + " ]");
-            System.out.println("-----------------------------------------");
-            System.out.println("1. Attack   2. Use Potion   3. Run");
-            System.out.print("Enter choice: ");
-
-            int action = getValidInt();
-
-            switch (action) {
-                case 1:
-                    int dmg = playerAttack + rand.nextInt(10);
-                    enemyHP -= dmg;
-                    System.out.println("\n⚔  You strike " + enemyName + " for " + dmg + " damage!");
-                    if (enemyHP <= 0) {
-                        System.out.println("✔  " + enemyName + " has been defeated!");
-                        playerXP += 50;
-                        playerPotions += 1;
-                        System.out.println("★  You earned 50 XP and 1 Potion!");
-                        System.out.println("   Total XP: " + playerXP);
-                        System.out.println("=========================================\n");
-                        return true;
-                    }
-                    break;
-
-                case 2:
-                    if (playerPotions > 0) {
-                        playerHP = playerMaxHP;
-                        playerPotions--;
-                        System.out.println("\n🧪 You drink a Shadow Potion!");
-                        System.out.println("   HP fully restored to " + playerHP + "!");
-                    } else {
-                        System.out.println("\n✖  No potions left! Fight or flee!");
-                    }
-                    break;
-
-                case 3:
-                    System.out.println("\n» You flee deeper into the dungeon...");
-                    System.out.println("=========================================\n");
-                    return false;
-
-                default:
-                    System.out.println("Invalid choice! You hesitate and lose your turn!");
-            }
-
-            if (enemyHP > 0) {
-                int enemyDmg = enemyAttack + rand.nextInt(5);
-                playerHP -= enemyDmg;
-                System.out.println("💀 " + enemyName + " hits you for " + enemyDmg + " damage!");
-            }
-        }
-
-        return playerHP > 0;
-    }
-
-    static int getValidInt() {
-        while (true) {
-            try {
-                int value = Integer.parseInt(sc.nextLine().trim());
-                return value;
-            } catch (NumberFormatException e) {
-                System.out.print("Please enter a NUMBER (1, 2 or 3): ");
-            }
-        }
-    }
-
-    static void gameOver() {
-        System.out.println("\n*****************************************");
-        System.out.println("*                                       *");
-        System.out.println("*           *** GAME OVER ***           *");
-        System.out.println("*   " + playerName + " has fallen in the Shadow    *");
-        System.out.println("*   Dungeon. The Dragon still reigns!   *");
-        System.out.println("*                                       *");
-        System.out.println("*****************************************");
-    }
-
-    static void victory() {
-        System.out.println("\n*****************************************");
-        System.out.println("*                                       *");
-        System.out.println("*   *** DRAGON DEFEATED! ***            *");
-        System.out.println("*   " + playerName + " has saved the kingdom!      *");
-        System.out.println("*   The Shadow Dungeon is no more!      *");
-        System.out.println("*   Total XP Earned : " + playerXP + "               *");
-        System.out.println("*   You are a TRUE LEGEND!              *");
-        System.out.println("*                                       *");
-        System.out.println("*****************************************");
+        new ShadowDungeonGUI();
     }
 }
-
