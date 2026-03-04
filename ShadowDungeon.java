@@ -1,7 +1,6 @@
-import javax.swing.*;
 import java.awt.*;
-import java.awt.event.*;
 import java.util.Random;
+import javax.swing.*;
 
 public class ShadowDungeonGUI extends JFrame {
 
@@ -11,27 +10,30 @@ public class ShadowDungeonGUI extends JFrame {
     private JTextField nameField;
     private JRadioButton warriorBtn, mageBtn, archerBtn;
 
-    private JLabel playerStatsLabel;
-    private JLabel enemyStatsLabel;
+    private JLabel playerInfoLabel;
+    private JLabel enemyInfoLabel;
+
+    private JProgressBar playerHPBar;
+    private JProgressBar enemyHPBar;
+
     private JTextArea gameLog;
 
-    private String playerName;
-    private String playerClass;
+    private String playerName, playerClass;
     private int playerHP, playerMaxHP, playerAttack;
-    private int playerPotions = 2;
-    private int playerXP = 0;
+    private int playerXP = 0, playerPotions = 2;
 
     private String[] enemies = {"Goblin", "Skeleton", "Troll", "DRAGON"};
     private int[] enemyHPs = {50, 80, 120, 200};
     private int[] enemyAttacks = {10, 15, 20, 30};
+
     private int currentEnemy = 0;
     private int enemyHP;
 
     private Random rand = new Random();
 
     public ShadowDungeonGUI() {
-        setTitle("ShadowDungeon - GUI RPG");
-        setSize(600, 450);
+        setTitle("ShadowDungeon - RPG");
+        setSize(750, 520);
         setDefaultCloseOperation(EXIT_ON_CLOSE);
         setLocationRelativeTo(null);
 
@@ -46,12 +48,16 @@ public class ShadowDungeonGUI extends JFrame {
     }
 
     private JPanel createStartPanel() {
-        JPanel panel = new JPanel();
-        panel.setLayout(new GridLayout(6, 1, 10, 10));
+        JPanel panel = new JPanel(new GridLayout(8, 1, 10, 10));
+        panel.setBackground(Color.BLACK);
 
-        panel.add(new JLabel("SHADOW DUNGEON", SwingConstants.CENTER));
+        JLabel title = new JLabel("SHADOW DUNGEON", SwingConstants.CENTER);
+        title.setFont(new Font("Serif", Font.BOLD, 30));
+        title.setForeground(Color.RED);
 
-        panel.add(new JLabel("Enter Hero Name:"));
+        panel.add(title);
+        panel.add(new JLabel("Enter Hero Name:", SwingConstants.CENTER));
+
         nameField = new JTextField();
         panel.add(nameField);
 
@@ -68,7 +74,11 @@ public class ShadowDungeonGUI extends JFrame {
         panel.add(mageBtn);
         panel.add(archerBtn);
 
-        JButton startBtn = new JButton("Start Game");
+        JButton startBtn = new JButton("Start Adventure");
+        startBtn.setBackground(Color.RED);
+        startBtn.setForeground(Color.WHITE);
+        startBtn.setFont(new Font("Arial", Font.BOLD, 16));
+
         panel.add(startBtn);
 
         startBtn.addActionListener(e -> startGame());
@@ -78,23 +88,51 @@ public class ShadowDungeonGUI extends JFrame {
 
     private JPanel createGamePanel() {
         JPanel panel = new JPanel(new BorderLayout());
+        panel.setBackground(Color.DARK_GRAY);
 
-        JPanel topPanel = new JPanel(new GridLayout(2, 1));
-        playerStatsLabel = new JLabel();
-        enemyStatsLabel = new JLabel();
-        topPanel.add(playerStatsLabel);
-        topPanel.add(enemyStatsLabel);
+        // TOP PANEL
+        JPanel topPanel = new JPanel(new GridLayout(4, 1));
+        topPanel.setBackground(Color.GRAY);
+
+        playerInfoLabel = new JLabel();
+        enemyInfoLabel = new JLabel();
+
+        playerHPBar = new JProgressBar();
+        enemyHPBar = new JProgressBar();
+
+        playerHPBar.setStringPainted(true);
+        enemyHPBar.setStringPainted(true);
+
+        topPanel.add(playerInfoLabel);
+        topPanel.add(playerHPBar);
+        topPanel.add(enemyInfoLabel);
+        topPanel.add(enemyHPBar);
 
         panel.add(topPanel, BorderLayout.NORTH);
 
+        // GAME LOG
         gameLog = new JTextArea();
         gameLog.setEditable(false);
+        gameLog.setBackground(Color.BLACK);
+        gameLog.setForeground(Color.GREEN);
+        gameLog.setFont(new Font("Monospaced", Font.PLAIN, 14));
+
         panel.add(new JScrollPane(gameLog), BorderLayout.CENTER);
 
+        // BUTTON PANEL
         JPanel buttonPanel = new JPanel();
-        JButton attackBtn = new JButton("Attack");
-        JButton potionBtn = new JButton("Use Potion");
-        JButton runBtn = new JButton("Run");
+
+        JButton attackBtn = new JButton("⚔ Attack");
+        JButton potionBtn = new JButton("🧪 Potion");
+        JButton runBtn = new JButton("🏃 Run");
+
+        attackBtn.setBackground(Color.ORANGE);
+        potionBtn.setBackground(Color.CYAN);
+        runBtn.setBackground(Color.LIGHT_GRAY);
+
+        attackBtn.setFont(new Font("Arial", Font.BOLD, 14));
+        potionBtn.setFont(new Font("Arial", Font.BOLD, 14));
+        runBtn.setFont(new Font("Arial", Font.BOLD, 14));
 
         buttonPanel.add(attackBtn);
         buttonPanel.add(potionBtn);
@@ -134,26 +172,30 @@ public class ShadowDungeonGUI extends JFrame {
         }
 
         currentEnemy = 0;
+        playerXP = 0;
+        playerPotions = 2;
+
         loadEnemy();
         updateStats();
+
         gameLog.setText("Welcome " + playerName + " the " + playerClass + "!\n");
         cardLayout.show(mainPanel, "Game");
     }
 
     private void loadEnemy() {
         enemyHP = enemyHPs[currentEnemy];
-        gameLog.append("A wild " + enemies[currentEnemy] + " appears!\n");
+        gameLog.append("\nA wild " + enemies[currentEnemy] + " appears!\n");
     }
 
     private void attackEnemy() {
         int damage = playerAttack + rand.nextInt(10);
         enemyHP -= damage;
-        gameLog.append("You hit " + enemies[currentEnemy] + " for " + damage + " damage!\n");
+        gameLog.append("You dealt " + damage + " damage!\n");
 
         if (enemyHP <= 0) {
             playerXP += 50;
             playerPotions++;
-            gameLog.append(enemies[currentEnemy] + " defeated! +50 XP, +1 Potion\n");
+            gameLog.append("Enemy defeated! +50 XP, +1 Potion\n");
 
             currentEnemy++;
             if (currentEnemy >= enemies.length) {
@@ -164,6 +206,7 @@ public class ShadowDungeonGUI extends JFrame {
         } else {
             enemyAttack();
         }
+
         updateStats();
     }
 
@@ -181,7 +224,7 @@ public class ShadowDungeonGUI extends JFrame {
         if (playerPotions > 0) {
             playerHP = playerMaxHP;
             playerPotions--;
-            gameLog.append("You used a potion. HP restored!\n");
+            gameLog.append("HP fully restored!\n");
             updateStats();
         } else {
             gameLog.append("No potions left!\n");
@@ -189,11 +232,20 @@ public class ShadowDungeonGUI extends JFrame {
     }
 
     private void updateStats() {
-        playerStatsLabel.setText("Player: " + playerName + " | HP: " + playerHP +
-                "/" + playerMaxHP + " | XP: " + playerXP + " | Potions: " + playerPotions);
+        playerInfoLabel.setText("Player: " + playerName +
+                " | Class: " + playerClass +
+                " | XP: " + playerXP +
+                " | Potions: " + playerPotions);
 
-        enemyStatsLabel.setText("Enemy: " + enemies[currentEnemy] +
-                " | HP: " + enemyHP);
+        enemyInfoLabel.setText("Enemy: " + enemies[currentEnemy]);
+
+        playerHPBar.setMaximum(playerMaxHP);
+        playerHPBar.setValue(Math.max(playerHP, 0));
+        playerHPBar.setString("HP: " + playerHP + "/" + playerMaxHP);
+
+        enemyHPBar.setMaximum(enemyHPs[currentEnemy]);
+        enemyHPBar.setValue(Math.max(enemyHP, 0));
+        enemyHPBar.setString("Enemy HP: " + enemyHP);
     }
 
     private void gameOver(String message) {
